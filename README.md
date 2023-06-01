@@ -1,7 +1,6 @@
 # Sokoban
 
 
-![Screenshot](screenshot.png)
 ![GIF](sokoban.gif)
 
 
