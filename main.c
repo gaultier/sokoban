@@ -212,7 +212,8 @@ int main(int argc, const char *argv[]) {
   SDL_FreeSurface(surface);
   SDL_Texture *current = mario[DIR_UP];
 
-  SDL_Texture *textures[6] = {NULL};
+  // We only have 6 textures but to make map human-readable and the parsing code simplistic, we use ascii characters as enum values for entities.
+  SDL_Texture *textures[255] = {NULL};
 
   SDL_Surface *crate_surface = IMG_Load("crate.jpg");
   textures[CRATE] = SDL_CreateTextureFromSurface(renderer, crate_surface);
