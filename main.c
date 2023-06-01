@@ -3,8 +3,6 @@
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/uio.h>
 #include <unistd.h>
 
 typedef enum { DIR_UP, DIR_RIGHT, DIR_DOWN, DIR_LEFT } Direction;
@@ -212,7 +210,8 @@ int main(int argc, const char *argv[]) {
   SDL_FreeSurface(surface);
   SDL_Texture *current = mario[DIR_UP];
 
-  // We only have 6 textures but to make map human-readable and the parsing code simplistic, we use ascii characters as enum values for entities.
+  // We only have 6 textures but to make map human-readable and the parsing code
+  // simplistic, we use ascii characters as enum values for entities.
   SDL_Texture *textures[255] = {NULL};
 
   SDL_Surface *crate_surface = IMG_Load("crate.jpg");
@@ -321,15 +320,4 @@ int main(int argc, const char *argv[]) {
       }
     }
   }
-  SDL_DestroyTexture(mario[0]);
-  SDL_DestroyTexture(mario[1]);
-  SDL_DestroyTexture(mario[2]);
-  SDL_DestroyTexture(mario[3]);
-  SDL_DestroyTexture(textures[WALL]);
-  SDL_DestroyTexture(textures[CRATE]);
-  SDL_DestroyTexture(textures[CRATE_OK]);
-  SDL_DestroyTexture(textures[OBJECTIVE]);
-  SDL_DestroyWindow(window);
-  SDL_Quit();
-  IMG_Quit();
 }
