@@ -2,6 +2,7 @@
 
 
 ![Screenshot](screenshot.png)
+![GIF](sokoban.gif)
 
 
 Pre-requisites:
