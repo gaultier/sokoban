@@ -5,12 +5,12 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "crate.h"
-#include "crate_ok.h"
 #include "character_down.h"
 #include "character_left.h"
 #include "character_right.h"
 #include "character_up.h"
+#include "crate.h"
+#include "crate_ok.h"
 #include "objective.h"
 #include "wall.h"
 
@@ -21,7 +21,7 @@
   } while (0)
 
 typedef enum { DIR_UP, DIR_RIGHT, DIR_DOWN, DIR_LEFT } Direction;
-typedef enum {
+typedef enum : uint8_t {
   ENTITY_NONE = 0,
   ENTITY_WALL = 1 << 0,
   ENTITY_OBJECTIVE = 1 << 1,
@@ -33,7 +33,8 @@ typedef enum {
 
 static bool entity_is_at_least(Entity a, Entity b) { return (a & b) == b; }
 static bool entity_is_exactly(Entity a, Entity b) { return a == b; }
-static Entity entity_minus_other(Entity a, Entity b) { return a & ~b; }
+static void entity_remove_other(Entity *a, Entity b) { *a &= ~b; }
+static void entity_add_other(Entity *a, Entity b) { *a |= b; }
 
 #define MAP_WIDTH 12
 #define MAP_HEIGHT 12
@@ -113,10 +114,10 @@ void load_map(uint8_t *map, uint8_t *crates_count, uint8_t *objectives_count,
 }
 
 void go(Direction dir, uint8_t *character_cell_i, uint8_t *map,
-        uint8_t *creates_ok_count) {
+        uint8_t *crates_ok_count) {
   pg_assert(character_cell_i != NULL);
   pg_assert(map != NULL);
-  pg_assert(creates_ok_count != NULL);
+  pg_assert(crates_ok_count != NULL);
 
   uint8_t next_cell_i = get_next_cell_i(dir, *character_cell_i);
   uint8_t *next_cell = &map[next_cell_i];
@@ -127,8 +128,9 @@ void go(Direction dir, uint8_t *character_cell_i, uint8_t *map,
   // MN, MO => Free pathing.
   if (entity_is_exactly(*next_cell, ENTITY_NONE) ||
       entity_is_exactly(*next_cell, ENTITY_OBJECTIVE)) {
-    map[*character_cell_i] &= ~ENTITY_CHARACTER;
-    *next_cell |= ENTITY_CHARACTER;
+    entity_remove_other(&map[*character_cell_i], ENTITY_CHARACTER);
+    entity_add_other(next_cell, ENTITY_CHARACTER);
+
     *character_cell_i = next_cell_i;
     return;
   }
@@ -143,23 +145,18 @@ void go(Direction dir, uint8_t *character_cell_i, uint8_t *map,
     return;
 
   // MCN, MCoN => Advance the crate.
-  if (entity_is_exactly(*next_next_cell, ENTITY_NONE)) {
-    map[*character_cell_i] &= ~ENTITY_CHARACTER;
-    *next_cell &= ~ENTITY_CRATE;
-    *next_cell |= ENTITY_CHARACTER;
-    *next_next_cell |= ENTITY_CRATE;
-    *character_cell_i = next_cell_i;
-    return;
-  }
-
   // MCO, MCoO => Advance the crate and count a point.
-  if (entity_is_at_least(*next_next_cell, ENTITY_OBJECTIVE)) {
-    map[*character_cell_i] &= ~ENTITY_CHARACTER;
-    *next_cell &= ~ENTITY_CRATE;
-    *next_cell |= ENTITY_CHARACTER;
-    *next_next_cell |= ENTITY_CRATE;
+  if (entity_is_exactly(*next_next_cell, ENTITY_NONE)) {
+    entity_remove_other(&map[*character_cell_i], ENTITY_CHARACTER);
+    entity_remove_other(next_cell, ENTITY_CRATE);
+    entity_add_other(next_cell, ENTITY_CHARACTER);
+    entity_add_other(next_next_cell, ENTITY_CRATE);
+
     *character_cell_i = next_cell_i;
-    return;
+
+    if (entity_is_exactly(*next_next_cell, ENTITY_CRATE_OK)) {
+      *crates_ok_count += 1;
+    }
   }
 }
 
@@ -308,9 +305,9 @@ int main() {
       }
     }
     SDL_Rect character_rect = {.w = CELL_SIZE,
-                           .h = CELL_SIZE,
-                           .x = CELL_SIZE * (character_cell_i % MAP_HEIGHT),
-                           .y = CELL_SIZE * (character_cell_i / MAP_WIDTH)};
+                               .h = CELL_SIZE,
+                               .x = CELL_SIZE * (character_cell_i % MAP_HEIGHT),
+                               .y = CELL_SIZE * (character_cell_i / MAP_WIDTH)};
     SDL_RenderCopy(renderer, current, NULL, &character_rect);
     SDL_RenderPresent(renderer);
 
