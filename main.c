@@ -1,9 +1,18 @@
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
 #include <fcntl.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
+
+#include "crate.h"
+#include "crate_ok.h"
+#include "mario_down.h"
+#include "mario_left.h"
+#include "mario_right.h"
+#include "mario_up.h"
+#include "objective.h"
+#include "wall.h"
 
 typedef enum { DIR_UP, DIR_RIGHT, DIR_DOWN, DIR_LEFT } Direction;
 typedef enum {
@@ -170,10 +179,6 @@ int main(int argc, const char *argv[]) {
   load_level(map_io, map, level, &mario_cell, &crates_count, &objectives_count,
              map_backup, &mario_cell_backup);
 
-  IMG_Init(IMG_INIT_JPG);
-  if (SDL_Init(SDL_INIT_VIDEO) < 0)
-    exit(1);
-
   const uint32_t CELL_SIZE = 34;
   const uint16_t SCREEN_WIDTH = 12 * CELL_SIZE;
   const uint16_t SCREEN_HEIGHT = 12 * CELL_SIZE;
@@ -193,19 +198,27 @@ int main(int argc, const char *argv[]) {
   SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
   SDL_Texture *mario[4];
   SDL_Surface *surface = NULL;
-  surface = IMG_Load("mario_up.gif");
+  const uint16_t width = 34, height = 34;
+  surface = SDL_CreateRGBSurfaceFrom(mario_up_rgb, width, height, 24, width * 3,
+                                     0x0000ff, 0x00ff00, 0xff0000, 0);
   mario[DIR_UP] = SDL_CreateTextureFromSurface(renderer, surface);
   SDL_FreeSurface(surface);
 
-  surface = IMG_Load("mario_right.gif");
+  surface =
+      SDL_CreateRGBSurfaceFrom(mario_right_rgb, width, height, 24, width * 3,
+                               0x0000ff, 0x00ff00, 0xff0000, 0);
   mario[DIR_RIGHT] = SDL_CreateTextureFromSurface(renderer, surface);
   SDL_FreeSurface(surface);
 
-  surface = IMG_Load("mario_down.gif");
+  surface =
+      SDL_CreateRGBSurfaceFrom(mario_down_rgb, width, height, 24, width * 3,
+                               0x0000ff, 0x00ff00, 0xff0000, 0);
   mario[DIR_DOWN] = SDL_CreateTextureFromSurface(renderer, surface);
   SDL_FreeSurface(surface);
 
-  surface = IMG_Load("mario_left.gif");
+  surface =
+      SDL_CreateRGBSurfaceFrom(mario_left_rgb, width, height, 24, width * 3,
+                               0x0000ff, 0x00ff00, 0xff0000, 0);
   mario[DIR_LEFT] = SDL_CreateTextureFromSurface(renderer, surface);
   SDL_FreeSurface(surface);
   SDL_Texture *current = mario[DIR_UP];
@@ -214,19 +227,26 @@ int main(int argc, const char *argv[]) {
   // simplistic, we use ascii characters as enum values for entities.
   SDL_Texture *textures[255] = {NULL};
 
-  SDL_Surface *crate_surface = IMG_Load("crate.jpg");
+  SDL_Surface *crate_surface = SDL_CreateRGBSurfaceFrom(
+      crate_rgb, width, height, 24, width * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
   textures[CRATE] = SDL_CreateTextureFromSurface(renderer, crate_surface);
   SDL_FreeSurface(crate_surface);
 
-  SDL_Surface *crate_ok_surface = IMG_Load("crate_ok.jpg");
+  SDL_Surface *crate_ok_surface =
+      SDL_CreateRGBSurfaceFrom(crate_ok_rgb, width, height, 24, width * 3,
+                               0x0000ff, 0x00ff00, 0xff0000, 0);
+
   textures[CRATE_OK] = SDL_CreateTextureFromSurface(renderer, crate_ok_surface);
   SDL_FreeSurface(crate_ok_surface);
 
-  SDL_Surface *wall_surface = IMG_Load("wall.jpg");
+  SDL_Surface *wall_surface = SDL_CreateRGBSurfaceFrom(
+      wall_rgb, width, height, 24, width * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
   textures[WALL] = SDL_CreateTextureFromSurface(renderer, wall_surface);
   SDL_FreeSurface(wall_surface);
 
-  SDL_Surface *objective_surface = IMG_Load("objective.png");
+  SDL_Surface *objective_surface = surface =
+      SDL_CreateRGBSurfaceFrom(objective_rgb, width, height, 24, width * 3,
+                               0x0000ff, 0x00ff00, 0xff0000, 0);
   textures[OBJECTIVE] =
       SDL_CreateTextureFromSurface(renderer, objective_surface);
   SDL_FreeSurface(objective_surface);
