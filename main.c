@@ -20,13 +20,14 @@
 
 typedef enum { DIR_UP, DIR_RIGHT, DIR_DOWN, DIR_LEFT } Direction;
 typedef enum : uint8_t {
+  // Numbers do not matter, as long as `ENTITY_NONE` is 0.
   ENTITY_NONE = 0,
   ENTITY_WALL = 1 << 0,
   ENTITY_OBJECTIVE = 1 << 1,
   ENTITY_CRATE = 1 << 2,
-  ENTITY_CRATE_OK = (ENTITY_OBJECTIVE | ENTITY_CRATE),
+  ENTITY_CRATE_OK = (ENTITY_OBJECTIVE | ENTITY_CRATE), // Pseudo entity.
   ENTITY_CHARACTER = 1 << 4,
-  ENTITY_MAX,
+  ENTITY_MAX, // Not an entity.
 } Entity;
 
 static bool entity_is_at_least(Entity a, Entity b) { return (a & b) == b; }
@@ -145,7 +146,7 @@ static void go(Direction dir, uint8_t *character_cell_i, Entity *map) {
     return;
   }
 
-  // MC*, MCo* at this point
+  // MC*, MCo* from this point on.
 
   Entity *const next_next_cell = &map[get_next_cell_i(dir, next_cell_i)];
 
@@ -239,31 +240,32 @@ int main() {
     uint8_t crates_ok_count = 0;
     for (uint8_t i = 0; i < MAP_WIDTH * MAP_HEIGHT; i++) {
       const Entity cell = game_map[i];
-      if (entity_is_exactly(cell, ENTITY_NONE) ||
-          entity_is_at_least(cell, ENTITY_CHARACTER))
+      if (entity_is_exactly(cell, ENTITY_NONE))
         continue;
 
       crates_ok_count += entity_is_exactly(cell, ENTITY_CRATE_OK);
 
-      SDL_Rect rect = {.w = CELL_SIZE,
-                       .h = CELL_SIZE,
-                       .x = CELL_SIZE * (i % MAP_HEIGHT),
-                       .y = CELL_SIZE * (i / MAP_WIDTH)};
-      if (entity_is_exactly(cell, ENTITY_WALL)) {
+      const SDL_Rect rect = {.w = CELL_SIZE,
+                             .h = CELL_SIZE,
+                             .x = CELL_SIZE * (i % MAP_HEIGHT),
+                             .y = CELL_SIZE * (i / MAP_WIDTH)};
+
+      // Get the right texture. Maybe it could be made branchless with bit
+      // operations, e.g. get the highest bit.
+      // There is a bit of precedence here: in the case of multiple entities
+      // occupying the same cell, we want to draw: character > crate_ok > crate
+      // > objective.
+      if (entity_is_at_least(cell, ENTITY_CHARACTER)) {
+        SDL_RenderCopy(renderer, current, NULL, &rect);
+      } else if (entity_is_exactly(cell, ENTITY_WALL)) {
         SDL_RenderCopy(renderer, textures[ENTITY_WALL], NULL, &rect);
       } else if (entity_is_exactly(cell, ENTITY_CRATE_OK)) {
         SDL_RenderCopy(renderer, textures[ENTITY_CRATE_OK], NULL, &rect);
-      } else if (entity_is_exactly(cell, ENTITY_OBJECTIVE)) {
-        SDL_RenderCopy(renderer, textures[ENTITY_OBJECTIVE], NULL, &rect);
       } else if (entity_is_exactly(cell, ENTITY_CRATE)) {
         SDL_RenderCopy(renderer, textures[ENTITY_CRATE], NULL, &rect);
-      }
-    }
-    SDL_Rect character_rect = {.w = CELL_SIZE,
-                               .h = CELL_SIZE,
-                               .x = CELL_SIZE * (character_cell_i % MAP_HEIGHT),
-                               .y = CELL_SIZE * (character_cell_i / MAP_WIDTH)};
-    SDL_RenderCopy(renderer, current, NULL, &character_rect);
+      } else if (entity_is_exactly(cell, ENTITY_OBJECTIVE)) {
+        SDL_RenderCopy(renderer, textures[ENTITY_OBJECTIVE], NULL, &rect);
+      }     }
     SDL_RenderPresent(renderer);
 
     if (crates_ok_count == objectives_count) {
