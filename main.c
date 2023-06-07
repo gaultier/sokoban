@@ -257,31 +257,18 @@ int main() {
       case SDLK_ESCAPE:
         exit(0);
         break;
+
       case SDLK_r:
         __builtin_memcpy(game_map, map, MAP_SIZE);
-        load_map(game_map, &crates_count, &objectives_count, &mario_cell_i,&crates_ok_count);
-
+        load_map(game_map, &crates_count, &objectives_count, &mario_cell_i,
+                 &crates_ok_count);
         break;
-        //      case SDLK_F9: {
-        //        map_file = open(argv[1], O_RDONLY);
-        //        if (!map_file)
-        //          exit(1);
-        //        read_res = read(map_file, &level_count, 1);
-        //        if (read_res == 0)
-        //          exit(1);
-        //        read_res = read(map_file, map_io, 3 * 12 * 12);
-        //        if (read_res == 0)
-        //          exit(1);
-        //        close(map_file);
-        //        load_level(map_io, map, level, &mario_cell_i, &crates_count,
-        //                   &objectives_count, map_backup, &mario_cell_backup);
-        //
-        //        break;
-        //      }
+
       case SDLK_UP:
         current = mario[DIR_UP];
         go(DIR_UP, &mario_cell_i, game_map, &crates_ok_count);
         break;
+
       case SDLK_RIGHT:
         current = mario[DIR_RIGHT];
         go(DIR_RIGHT, &mario_cell_i, game_map, &crates_ok_count);
@@ -302,9 +289,7 @@ int main() {
 
     for (uint8_t i = 0; i < MAP_WIDTH * MAP_HEIGHT; i++) {
       const uint8_t cell = game_map[i];
-      const bool is_none = cell == ENTITY_NONE;
-      const bool is_mario = (cell & ENTITY_MARIO) == ENTITY_MARIO;
-      if (is_none || is_mario)
+      if (entity_is_exactly(cell,ENTITY_NONE) || entity_is_at_least(cell, ENTITY_MARIO))
         continue;
 
       SDL_Rect rect = {.w = CELL_SIZE,
