@@ -115,8 +115,8 @@ static void load_map(Entity *map, uint8_t *crates_count,
 
 static SDL_Texture *load_texture(SDL_Renderer *renderer, const uint8_t *data) {
   SDL_Surface *surface =
-      SDL_CreateRGBSurfaceFrom((void*)data, CELL_SIZE, CELL_SIZE, 24, CELL_SIZE * 3,
-                               0x0000ff, 0x00ff00, 0xff0000, 0);
+      SDL_CreateRGBSurfaceFrom((void *)data, CELL_SIZE, CELL_SIZE, 24,
+                               CELL_SIZE * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
   pg_assert(surface != NULL);
   SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
   pg_assert(texture != NULL);
@@ -131,7 +131,7 @@ static void go(Direction dir, uint8_t *character_cell_i, Entity *map) {
 
   uint8_t next_cell_i = get_next_cell_i(dir, *character_cell_i);
   Entity *const next_cell = &map[next_cell_i];
-  // MW
+  // MW => No pathing.
   if (entity_is_exactly(*next_cell, ENTITY_WALL))
     return;
 
