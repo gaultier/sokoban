@@ -79,8 +79,6 @@ static uint8_t map[MAP_WIDTH][MAP_HEIGHT] = {
      ENTITY_WALL, ENTITY_WALL}};
 
 uint8_t get_next_cell_i(Direction dir, uint8_t cell);
-void go(Direction dir, uint8_t *cell, uint8_t *map);
-uint8_t count(Entity entity, uint8_t *map);
 
 uint8_t get_next_cell_i(Direction dir, uint8_t cell) {
   switch (dir) {
@@ -95,15 +93,6 @@ uint8_t get_next_cell_i(Direction dir, uint8_t cell) {
   }
 }
 
-uint8_t count(Entity entity, uint8_t *map) {
-  uint8_t c = 0;
-
-  for (uint8_t i = 0; i < MAP_WIDTH * MAP_HEIGHT; i++) {
-    if (map[i] == entity)
-      c++;
-  };
-  return c;
-}
 
 void load_map(uint8_t *crates_count, uint8_t *objectives_count,
               uint8_t *mario_cell_i) {
@@ -125,7 +114,12 @@ void load_map(uint8_t *crates_count, uint8_t *objectives_count,
   }
 }
 
-void go(Direction dir, uint8_t *mario_cell_i, uint8_t *map) {
+void go(Direction dir, uint8_t *mario_cell_i, uint8_t *map,
+        uint8_t *creates_ok_count) {
+  pg_assert(mario_cell_i != NULL);
+  pg_assert(map != NULL);
+  pg_assert(creates_ok_count != NULL);
+
   uint8_t next_cell_i = get_next_cell_i(dir, *mario_cell_i);
   uint8_t *next_cell = &map[next_cell_i];
   // MW
@@ -251,6 +245,7 @@ int main() {
       SDL_CreateTextureFromSurface(renderer, objective_surface);
   SDL_FreeSurface(objective_surface);
 
+  uint8_t crates_ok_count = 0;
   while (true) {
     SDL_Event e;
     SDL_WaitEvent(&e);
@@ -283,21 +278,21 @@ int main() {
         //      }
       case SDLK_UP:
         current = mario[DIR_UP];
-        go(DIR_UP, &mario_cell_i, (uint8_t *)map);
+        go(DIR_UP, &mario_cell_i, (uint8_t *)map, &crates_ok_count);
         break;
       case SDLK_RIGHT:
         current = mario[DIR_RIGHT];
-        go(DIR_RIGHT, &mario_cell_i, (uint8_t *)map);
+        go(DIR_RIGHT, &mario_cell_i, (uint8_t *)map, &crates_ok_count);
         break;
 
       case SDLK_DOWN:
         current = mario[DIR_DOWN];
-        go(DIR_DOWN, &mario_cell_i, (uint8_t *)map);
+        go(DIR_DOWN, &mario_cell_i, (uint8_t *)map, &crates_ok_count);
         break;
 
       case SDLK_LEFT:
         current = mario[DIR_LEFT];
-        go(DIR_LEFT, &mario_cell_i, (uint8_t *)map);
+        go(DIR_LEFT, &mario_cell_i, (uint8_t *)map, &crates_ok_count);
         break;
       }
     }
@@ -331,8 +326,7 @@ int main() {
     SDL_RenderCopy(renderer, current, NULL, &mario_rect);
     SDL_RenderPresent(renderer);
 
-    uint8_t crates_ok_count = count(ENTITY_CRATE_OK, (uint8_t *)map);
-    if (crates_ok_count == 1) {
+    if (crates_ok_count == objectives_count) {
       SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "You won!", "Yeah!",
                                window);
       exit(0);
