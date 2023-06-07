@@ -84,11 +84,11 @@ static const Entity map[MAP_WIDTH][MAP_HEIGHT] = {
 static uint8_t get_next_cell_i(Direction dir, Entity cell) {
   switch (dir) {
   case DIR_UP:
-    return cell - 12;
+    return cell - MAP_WIDTH;
   case DIR_RIGHT:
     return cell + 1;
   case DIR_DOWN:
-    return cell + 12;
+    return cell + MAP_WIDTH;
   case DIR_LEFT:
     return cell - 1;
   }
