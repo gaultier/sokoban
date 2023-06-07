@@ -240,9 +240,11 @@ int main() {
     uint8_t crates_ok_count = 0;
     for (uint8_t i = 0; i < MAP_WIDTH * MAP_HEIGHT; i++) {
       const Entity cell = game_map[i];
-      if (entity_is_exactly(cell, ENTITY_NONE))
+
+      if (entity_is_exactly(cell, ENTITY_NONE)) // Nothing to render.
         continue;
 
+      // Since we are iterating on each cell, count the number of crates ok.
       crates_ok_count += entity_is_exactly(cell, ENTITY_CRATE_OK);
 
       const SDL_Rect rect = {.w = CELL_SIZE,
@@ -265,9 +267,11 @@ int main() {
         SDL_RenderCopy(renderer, textures[ENTITY_CRATE], NULL, &rect);
       } else if (entity_is_exactly(cell, ENTITY_OBJECTIVE)) {
         SDL_RenderCopy(renderer, textures[ENTITY_OBJECTIVE], NULL, &rect);
-      }     }
+      }
+    }
     SDL_RenderPresent(renderer);
 
+    // The end?
     if (crates_ok_count == objectives_count) {
       SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "You won!", "Yeah!",
                                window);
