@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
+// Sprites
 #include "character_down.h"
 #include "character_left.h"
 #include "character_right.h"
@@ -39,6 +40,10 @@ static void entity_add_other(Entity *a, Entity b) { *a |= b; }
 #define MAP_WIDTH 12
 #define MAP_HEIGHT 12
 #define MAP_SIZE ((MAP_WIDTH) * (MAP_WIDTH))
+
+static const uint32_t CELL_SIZE = 34;
+static const uint16_t SCREEN_WIDTH = MAP_WIDTH * CELL_SIZE;
+static const uint16_t SCREEN_HEIGHT = MAP_HEIGHT * CELL_SIZE;
 
 static const Entity map[MAP_WIDTH][MAP_HEIGHT] = {
     {ENTITY_WALL, ENTITY_WALL, ENTITY_WALL, ENTITY_WALL, ENTITY_WALL,
@@ -111,7 +116,19 @@ void load_map(Entity *map, uint8_t *crates_count, uint8_t *objectives_count,
   }
 }
 
-void go(Direction dir, uint8_t *character_cell_i, Entity *map) {
+static SDL_Texture *load_texture(SDL_Renderer *renderer, uint8_t *data) {
+  SDL_Surface *surface =
+      SDL_CreateRGBSurfaceFrom(data, CELL_SIZE, CELL_SIZE, 24,
+                               CELL_SIZE * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
+  pg_assert(surface != NULL);
+  SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+  pg_assert(texture != NULL);
+  SDL_FreeSurface(surface);
+
+  return texture;
+}
+
+static void go(Direction dir, uint8_t *character_cell_i, Entity *map) {
   pg_assert(character_cell_i != NULL);
   pg_assert(map != NULL);
 
@@ -158,10 +175,6 @@ int main() {
   __builtin_memcpy(game_map, map, MAP_SIZE);
   load_map(game_map, &crates_count, &objectives_count, &character_cell_i);
 
-  const uint32_t CELL_SIZE = 34;
-  const uint16_t SCREEN_WIDTH = MAP_WIDTH * CELL_SIZE;
-  const uint16_t SCREEN_HEIGHT = MAP_HEIGHT * CELL_SIZE;
-
   SDL_Window *window =
       SDL_CreateWindow("Sokoban", SDL_WINDOWPOS_UNDEFINED,
                        SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
@@ -170,69 +183,22 @@ int main() {
 
   SDL_Renderer *renderer =
       SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-  if (!renderer) {
-    fprintf(stderr, "Error creating renderer\n");
-    exit(1);
-  }
+  pg_assert(renderer != NULL);
   SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
-  SDL_Texture *character[4];
-  SDL_Surface *surface = NULL;
-  surface =
-      SDL_CreateRGBSurfaceFrom(character_up_rgb, CELL_SIZE, CELL_SIZE, 24,
-                               CELL_SIZE * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
-  character[DIR_UP] = SDL_CreateTextureFromSurface(renderer, surface);
-  SDL_FreeSurface(surface);
+  SDL_Texture *character[4] = {
+      [DIR_UP] = load_texture(renderer, character_up_rgb),
+      [DIR_DOWN] = load_texture(renderer, character_down_rgb),
+      [DIR_LEFT] = load_texture(renderer, character_left_rgb),
+      [DIR_RIGHT] = load_texture(renderer, character_right_rgb),
+  };
+  SDL_Texture *current = character[DIR_UP]; // Start up.
 
-  surface =
-      SDL_CreateRGBSurfaceFrom(character_right_rgb, CELL_SIZE, CELL_SIZE, 24,
-                               CELL_SIZE * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
-  character[DIR_RIGHT] = SDL_CreateTextureFromSurface(renderer, surface);
-  SDL_FreeSurface(surface);
-
-  surface =
-      SDL_CreateRGBSurfaceFrom(character_down_rgb, CELL_SIZE, CELL_SIZE, 24,
-                               CELL_SIZE * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
-  character[DIR_DOWN] = SDL_CreateTextureFromSurface(renderer, surface);
-  SDL_FreeSurface(surface);
-
-  surface =
-      SDL_CreateRGBSurfaceFrom(character_left_rgb, CELL_SIZE, CELL_SIZE, 24,
-                               CELL_SIZE * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
-  character[DIR_LEFT] = SDL_CreateTextureFromSurface(renderer, surface);
-  SDL_FreeSurface(surface);
-  SDL_Texture *current = character[DIR_UP];
-
-  // We only have 6 textures but to make map human-readable and the parsing code
-  // simplistic, we use ascii characters as enum values for entities.
-  SDL_Texture *textures[ENTITY_MAX] = {0};
-
-  SDL_Surface *crate_surface =
-      SDL_CreateRGBSurfaceFrom(crate_rgb, CELL_SIZE, CELL_SIZE, 24,
-                               CELL_SIZE * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
-  textures[ENTITY_CRATE] =
-      SDL_CreateTextureFromSurface(renderer, crate_surface);
-  SDL_FreeSurface(crate_surface);
-
-  SDL_Surface *crate_ok_surface =
-      SDL_CreateRGBSurfaceFrom(crate_ok_rgb, CELL_SIZE, CELL_SIZE, 24,
-                               CELL_SIZE * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
-
-  textures[ENTITY_CRATE_OK] =
-      SDL_CreateTextureFromSurface(renderer, crate_ok_surface);
-  SDL_FreeSurface(crate_ok_surface);
-
-  SDL_Surface *wall_surface =
-      SDL_CreateRGBSurfaceFrom(wall_rgb, CELL_SIZE, CELL_SIZE, 24,
-                               CELL_SIZE * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
-  textures[ENTITY_WALL] = SDL_CreateTextureFromSurface(renderer, wall_surface);
-  SDL_FreeSurface(wall_surface);
-
-  SDL_Surface *objective_surface = surface =
-      SDL_CreateRGBSurfaceFrom(objective_rgb, CELL_SIZE, CELL_SIZE, 24,
-                               CELL_SIZE * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
-  textures[ENTITY_OBJECTIVE] =
-      SDL_CreateTextureFromSurface(renderer, objective_surface);
-  SDL_FreeSurface(objective_surface);
+  SDL_Texture *textures[ENTITY_MAX] = {
+      [ENTITY_CRATE] = load_texture(renderer, crate_rgb),
+      [ENTITY_CRATE_OK] = load_texture(renderer, crate_ok_rgb),
+      [ENTITY_OBJECTIVE] = load_texture(renderer, objective_rgb),
+      [ENTITY_WALL] = load_texture(renderer, wall_rgb),
+  };
 
   while (true) {
     SDL_Event e;
