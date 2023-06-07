@@ -7,10 +7,10 @@
 
 #include "crate.h"
 #include "crate_ok.h"
-#include "mario_down.h"
-#include "mario_left.h"
-#include "mario_right.h"
-#include "mario_up.h"
+#include "character_down.h"
+#include "character_left.h"
+#include "character_right.h"
+#include "character_up.h"
 #include "objective.h"
 #include "wall.h"
 
@@ -27,7 +27,7 @@ typedef enum {
   ENTITY_OBJECTIVE = 1 << 1,
   ENTITY_CRATE = 1 << 2,
   ENTITY_CRATE_OK = (ENTITY_OBJECTIVE | ENTITY_CRATE),
-  ENTITY_MARIO = 1 << 4,
+  ENTITY_CHARACTER = 1 << 4,
   ENTITY_MAX,
 } Entity;
 
@@ -44,7 +44,7 @@ static const uint8_t map[MAP_WIDTH][MAP_HEIGHT] = {
      ENTITY_WALL, ENTITY_WALL, ENTITY_WALL, ENTITY_WALL, ENTITY_WALL,
      ENTITY_WALL, ENTITY_WALL},
     {ENTITY_WALL, ENTITY_WALL, ENTITY_WALL, ENTITY_WALL, ENTITY_WALL,
-     ENTITY_WALL, ENTITY_WALL, ENTITY_WALL, ENTITY_NONE, ENTITY_MARIO,
+     ENTITY_WALL, ENTITY_WALL, ENTITY_WALL, ENTITY_NONE, ENTITY_CHARACTER,
      ENTITY_WALL, ENTITY_WALL},
     {ENTITY_WALL, ENTITY_NONE, ENTITY_NONE, ENTITY_CRATE, ENTITY_NONE,
      ENTITY_CRATE, ENTITY_NONE, ENTITY_CRATE, ENTITY_NONE, ENTITY_CRATE,
@@ -91,34 +91,34 @@ uint8_t get_next_cell_i(Direction dir, uint8_t cell) {
 }
 
 void load_map(uint8_t *map, uint8_t *crates_count, uint8_t *objectives_count,
-              uint8_t *mario_cell_i, uint8_t *crates_ok_count) {
+              uint8_t *character_cell_i, uint8_t *crates_ok_count) {
   pg_assert(map != NULL);
   pg_assert(crates_count != NULL);
   pg_assert(objectives_count != NULL);
-  pg_assert(mario_cell_i != NULL);
+  pg_assert(character_cell_i != NULL);
   pg_assert(crates_ok_count != NULL);
   *crates_ok_count = 0;
 
   for (uint8_t i = 0; i < MAP_SIZE; i++) {
     const uint8_t cell = map[i];
-    pg_assert(cell == ENTITY_NONE || cell == ENTITY_MARIO ||
+    pg_assert(cell == ENTITY_NONE || cell == ENTITY_CHARACTER ||
               cell == ENTITY_WALL || cell == ENTITY_OBJECTIVE ||
               cell == ENTITY_CRATE);
 
     *crates_count += cell == ENTITY_CRATE;
     *objectives_count += cell == ENTITY_OBJECTIVE;
-    if (cell == ENTITY_MARIO)
-      *mario_cell_i = i;
+    if (cell == ENTITY_CHARACTER)
+      *character_cell_i = i;
   }
 }
 
-void go(Direction dir, uint8_t *mario_cell_i, uint8_t *map,
+void go(Direction dir, uint8_t *character_cell_i, uint8_t *map,
         uint8_t *creates_ok_count) {
-  pg_assert(mario_cell_i != NULL);
+  pg_assert(character_cell_i != NULL);
   pg_assert(map != NULL);
   pg_assert(creates_ok_count != NULL);
 
-  uint8_t next_cell_i = get_next_cell_i(dir, *mario_cell_i);
+  uint8_t next_cell_i = get_next_cell_i(dir, *character_cell_i);
   uint8_t *next_cell = &map[next_cell_i];
   // MW
   if (entity_is_exactly(*next_cell, ENTITY_WALL))
@@ -127,9 +127,9 @@ void go(Direction dir, uint8_t *mario_cell_i, uint8_t *map,
   // MN, MO => Free pathing.
   if (entity_is_exactly(*next_cell, ENTITY_NONE) ||
       entity_is_exactly(*next_cell, ENTITY_OBJECTIVE)) {
-    map[*mario_cell_i] &= ~ENTITY_MARIO;
-    *next_cell |= ENTITY_MARIO;
-    *mario_cell_i = next_cell_i;
+    map[*character_cell_i] &= ~ENTITY_CHARACTER;
+    *next_cell |= ENTITY_CHARACTER;
+    *character_cell_i = next_cell_i;
     return;
   }
 
@@ -144,31 +144,31 @@ void go(Direction dir, uint8_t *mario_cell_i, uint8_t *map,
 
   // MCN, MCoN => Advance the crate.
   if (entity_is_exactly(*next_next_cell, ENTITY_NONE)) {
-    map[*mario_cell_i] &= ~ENTITY_MARIO;
+    map[*character_cell_i] &= ~ENTITY_CHARACTER;
     *next_cell &= ~ENTITY_CRATE;
-    *next_cell |= ENTITY_MARIO;
+    *next_cell |= ENTITY_CHARACTER;
     *next_next_cell |= ENTITY_CRATE;
-    *mario_cell_i = next_cell_i;
+    *character_cell_i = next_cell_i;
     return;
   }
 
   // MCO, MCoO => Advance the crate and count a point.
   if (entity_is_at_least(*next_next_cell, ENTITY_OBJECTIVE)) {
-    map[*mario_cell_i] &= ~ENTITY_MARIO;
+    map[*character_cell_i] &= ~ENTITY_CHARACTER;
     *next_cell &= ~ENTITY_CRATE;
-    *next_cell |= ENTITY_MARIO;
+    *next_cell |= ENTITY_CHARACTER;
     *next_next_cell |= ENTITY_CRATE;
-    *mario_cell_i = next_cell_i;
+    *character_cell_i = next_cell_i;
     return;
   }
 }
 
 int main() {
-  uint8_t crates_count = 0, objectives_count = 0, mario_cell_i = 0,
+  uint8_t crates_count = 0, objectives_count = 0, character_cell_i = 0,
           crates_ok_count = 0;
   uint8_t game_map[MAP_SIZE] = {0};
   __builtin_memcpy(game_map, map, MAP_SIZE);
-  load_map(game_map, &crates_count, &objectives_count, &mario_cell_i,
+  load_map(game_map, &crates_count, &objectives_count, &character_cell_i,
            &crates_ok_count);
 
   const uint32_t CELL_SIZE = 34;
@@ -188,32 +188,32 @@ int main() {
     exit(1);
   }
   SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
-  SDL_Texture *mario[4];
+  SDL_Texture *character[4];
   SDL_Surface *surface = NULL;
   surface =
-      SDL_CreateRGBSurfaceFrom(mario_up_rgb, CELL_SIZE, CELL_SIZE, 24,
+      SDL_CreateRGBSurfaceFrom(character_up_rgb, CELL_SIZE, CELL_SIZE, 24,
                                CELL_SIZE * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
-  mario[DIR_UP] = SDL_CreateTextureFromSurface(renderer, surface);
+  character[DIR_UP] = SDL_CreateTextureFromSurface(renderer, surface);
   SDL_FreeSurface(surface);
 
   surface =
-      SDL_CreateRGBSurfaceFrom(mario_right_rgb, CELL_SIZE, CELL_SIZE, 24,
+      SDL_CreateRGBSurfaceFrom(character_right_rgb, CELL_SIZE, CELL_SIZE, 24,
                                CELL_SIZE * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
-  mario[DIR_RIGHT] = SDL_CreateTextureFromSurface(renderer, surface);
+  character[DIR_RIGHT] = SDL_CreateTextureFromSurface(renderer, surface);
   SDL_FreeSurface(surface);
 
   surface =
-      SDL_CreateRGBSurfaceFrom(mario_down_rgb, CELL_SIZE, CELL_SIZE, 24,
+      SDL_CreateRGBSurfaceFrom(character_down_rgb, CELL_SIZE, CELL_SIZE, 24,
                                CELL_SIZE * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
-  mario[DIR_DOWN] = SDL_CreateTextureFromSurface(renderer, surface);
+  character[DIR_DOWN] = SDL_CreateTextureFromSurface(renderer, surface);
   SDL_FreeSurface(surface);
 
   surface =
-      SDL_CreateRGBSurfaceFrom(mario_left_rgb, CELL_SIZE, CELL_SIZE, 24,
+      SDL_CreateRGBSurfaceFrom(character_left_rgb, CELL_SIZE, CELL_SIZE, 24,
                                CELL_SIZE * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
-  mario[DIR_LEFT] = SDL_CreateTextureFromSurface(renderer, surface);
+  character[DIR_LEFT] = SDL_CreateTextureFromSurface(renderer, surface);
   SDL_FreeSurface(surface);
-  SDL_Texture *current = mario[DIR_UP];
+  SDL_Texture *current = character[DIR_UP];
 
   // We only have 6 textures but to make map human-readable and the parsing code
   // simplistic, we use ascii characters as enum values for entities.
@@ -260,28 +260,28 @@ int main() {
 
       case SDLK_r:
         __builtin_memcpy(game_map, map, MAP_SIZE);
-        load_map(game_map, &crates_count, &objectives_count, &mario_cell_i,
+        load_map(game_map, &crates_count, &objectives_count, &character_cell_i,
                  &crates_ok_count);
         break;
 
       case SDLK_UP:
-        current = mario[DIR_UP];
-        go(DIR_UP, &mario_cell_i, game_map, &crates_ok_count);
+        current = character[DIR_UP];
+        go(DIR_UP, &character_cell_i, game_map, &crates_ok_count);
         break;
 
       case SDLK_RIGHT:
-        current = mario[DIR_RIGHT];
-        go(DIR_RIGHT, &mario_cell_i, game_map, &crates_ok_count);
+        current = character[DIR_RIGHT];
+        go(DIR_RIGHT, &character_cell_i, game_map, &crates_ok_count);
         break;
 
       case SDLK_DOWN:
-        current = mario[DIR_DOWN];
-        go(DIR_DOWN, &mario_cell_i, game_map, &crates_ok_count);
+        current = character[DIR_DOWN];
+        go(DIR_DOWN, &character_cell_i, game_map, &crates_ok_count);
         break;
 
       case SDLK_LEFT:
-        current = mario[DIR_LEFT];
-        go(DIR_LEFT, &mario_cell_i, game_map, &crates_ok_count);
+        current = character[DIR_LEFT];
+        go(DIR_LEFT, &character_cell_i, game_map, &crates_ok_count);
         break;
       }
     }
@@ -289,7 +289,8 @@ int main() {
 
     for (uint8_t i = 0; i < MAP_WIDTH * MAP_HEIGHT; i++) {
       const uint8_t cell = game_map[i];
-      if (entity_is_exactly(cell,ENTITY_NONE) || entity_is_at_least(cell, ENTITY_MARIO))
+      if (entity_is_exactly(cell, ENTITY_NONE) ||
+          entity_is_at_least(cell, ENTITY_CHARACTER))
         continue;
 
       SDL_Rect rect = {.w = CELL_SIZE,
@@ -306,11 +307,11 @@ int main() {
         SDL_RenderCopy(renderer, textures[ENTITY_CRATE], NULL, &rect);
       }
     }
-    SDL_Rect mario_rect = {.w = CELL_SIZE,
+    SDL_Rect character_rect = {.w = CELL_SIZE,
                            .h = CELL_SIZE,
-                           .x = CELL_SIZE * (mario_cell_i % MAP_HEIGHT),
-                           .y = CELL_SIZE * (mario_cell_i / MAP_WIDTH)};
-    SDL_RenderCopy(renderer, current, NULL, &mario_rect);
+                           .x = CELL_SIZE * (character_cell_i % MAP_HEIGHT),
+                           .y = CELL_SIZE * (character_cell_i / MAP_WIDTH)};
+    SDL_RenderCopy(renderer, current, NULL, &character_rect);
     SDL_RenderPresent(renderer);
 
     if (crates_ok_count == objectives_count) {
