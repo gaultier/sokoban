@@ -1,9 +1,6 @@
 #include <SDL2/SDL.h>
-#include <fcntl.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <unistd.h>
 
 // Sprites
 #include "character_down.h"
@@ -96,8 +93,8 @@ static uint8_t get_next_cell_i(Direction dir, Entity cell) {
   }
 }
 
-static void load_map(Entity *map, uint8_t *crates_count, uint8_t *objectives_count,
-              uint8_t *character_cell_i) {
+static void load_map(Entity *map, uint8_t *crates_count,
+                     uint8_t *objectives_count, uint8_t *character_cell_i) {
   pg_assert(map != NULL);
   pg_assert(crates_count != NULL);
   pg_assert(objectives_count != NULL);
@@ -116,9 +113,9 @@ static void load_map(Entity *map, uint8_t *crates_count, uint8_t *objectives_cou
   }
 }
 
-static SDL_Texture *load_texture(SDL_Renderer *renderer, uint8_t *data) {
+static SDL_Texture *load_texture(SDL_Renderer *renderer, const uint8_t *data) {
   SDL_Surface *surface =
-      SDL_CreateRGBSurfaceFrom(data, CELL_SIZE, CELL_SIZE, 24, CELL_SIZE * 3,
+      SDL_CreateRGBSurfaceFrom((void*)data, CELL_SIZE, CELL_SIZE, 24, CELL_SIZE * 3,
                                0x0000ff, 0x00ff00, 0xff0000, 0);
   pg_assert(surface != NULL);
   SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
