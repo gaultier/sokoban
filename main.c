@@ -83,7 +83,7 @@ static const Entity map[MAP_WIDTH][MAP_HEIGHT] = {
      ENTITY_WALL, ENTITY_WALL, ENTITY_WALL, ENTITY_WALL, ENTITY_WALL,
      ENTITY_WALL, ENTITY_WALL}};
 
-uint8_t get_next_cell_i(Direction dir, Entity cell) {
+static uint8_t get_next_cell_i(Direction dir, Entity cell) {
   switch (dir) {
   case DIR_UP:
     return cell - 12;
@@ -96,7 +96,7 @@ uint8_t get_next_cell_i(Direction dir, Entity cell) {
   }
 }
 
-void load_map(Entity *map, uint8_t *crates_count, uint8_t *objectives_count,
+static void load_map(Entity *map, uint8_t *crates_count, uint8_t *objectives_count,
               uint8_t *character_cell_i) {
   pg_assert(map != NULL);
   pg_assert(crates_count != NULL);
@@ -118,8 +118,8 @@ void load_map(Entity *map, uint8_t *crates_count, uint8_t *objectives_count,
 
 static SDL_Texture *load_texture(SDL_Renderer *renderer, uint8_t *data) {
   SDL_Surface *surface =
-      SDL_CreateRGBSurfaceFrom(data, CELL_SIZE, CELL_SIZE, 24,
-                               CELL_SIZE * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
+      SDL_CreateRGBSurfaceFrom(data, CELL_SIZE, CELL_SIZE, 24, CELL_SIZE * 3,
+                               0x0000ff, 0x00ff00, 0xff0000, 0);
   pg_assert(surface != NULL);
   SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
   pg_assert(texture != NULL);
