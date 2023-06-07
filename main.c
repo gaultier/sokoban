@@ -92,13 +92,11 @@ uint8_t get_next_cell_i(Direction dir, uint8_t cell) {
 }
 
 void load_map(uint8_t *map, uint8_t *crates_count, uint8_t *objectives_count,
-              uint8_t *character_cell_i, uint8_t *crates_ok_count) {
+              uint8_t *character_cell_i) {
   pg_assert(map != NULL);
   pg_assert(crates_count != NULL);
   pg_assert(objectives_count != NULL);
   pg_assert(character_cell_i != NULL);
-  pg_assert(crates_ok_count != NULL);
-  *crates_ok_count = 0;
 
   for (uint8_t i = 0; i < MAP_SIZE; i++) {
     const uint8_t cell = map[i];
@@ -113,11 +111,9 @@ void load_map(uint8_t *map, uint8_t *crates_count, uint8_t *objectives_count,
   }
 }
 
-void go(Direction dir, uint8_t *character_cell_i, uint8_t *map,
-        uint8_t *crates_ok_count) {
+void go(Direction dir, uint8_t *character_cell_i, uint8_t *map) {
   pg_assert(character_cell_i != NULL);
   pg_assert(map != NULL);
-  pg_assert(crates_ok_count != NULL);
 
   uint8_t next_cell_i = get_next_cell_i(dir, *character_cell_i);
   uint8_t *next_cell = &map[next_cell_i];
@@ -144,29 +140,23 @@ void go(Direction dir, uint8_t *character_cell_i, uint8_t *map,
       entity_is_at_least(*next_next_cell, ENTITY_CRATE))
     return;
 
-  // MCN, MCoN => Advance the crate.
-  // MCO, MCoO => Advance the crate and count a point.
-  if (entity_is_exactly(*next_next_cell, ENTITY_NONE)) {
+  // MCN, MCoN, MCO, MCoO  => Advance the crate.
+  if (entity_is_exactly(*next_next_cell, ENTITY_NONE) ||
+      entity_is_at_least(*next_next_cell, ENTITY_OBJECTIVE)) {
     entity_remove_other(&map[*character_cell_i], ENTITY_CHARACTER);
     entity_remove_other(next_cell, ENTITY_CRATE);
     entity_add_other(next_cell, ENTITY_CHARACTER);
     entity_add_other(next_next_cell, ENTITY_CRATE);
 
     *character_cell_i = next_cell_i;
-
-    if (entity_is_exactly(*next_next_cell, ENTITY_CRATE_OK)) {
-      *crates_ok_count += 1;
-    }
   }
 }
 
 int main() {
-  uint8_t crates_count = 0, objectives_count = 0, character_cell_i = 0,
-          crates_ok_count = 0;
+  uint8_t crates_count = 0, objectives_count = 0, character_cell_i = 0;
   uint8_t game_map[MAP_SIZE] = {0};
   __builtin_memcpy(game_map, map, MAP_SIZE);
-  load_map(game_map, &crates_count, &objectives_count, &character_cell_i,
-           &crates_ok_count);
+  load_map(game_map, &crates_count, &objectives_count, &character_cell_i);
 
   const uint32_t CELL_SIZE = 34;
   const uint16_t SCREEN_WIDTH = MAP_WIDTH * CELL_SIZE;
@@ -257,38 +247,40 @@ int main() {
 
       case SDLK_r:
         __builtin_memcpy(game_map, map, MAP_SIZE);
-        load_map(game_map, &crates_count, &objectives_count, &character_cell_i,
-                 &crates_ok_count);
+        load_map(game_map, &crates_count, &objectives_count, &character_cell_i);
         break;
 
       case SDLK_UP:
         current = character[DIR_UP];
-        go(DIR_UP, &character_cell_i, game_map, &crates_ok_count);
+        go(DIR_UP, &character_cell_i, game_map);
         break;
 
       case SDLK_RIGHT:
         current = character[DIR_RIGHT];
-        go(DIR_RIGHT, &character_cell_i, game_map, &crates_ok_count);
+        go(DIR_RIGHT, &character_cell_i, game_map);
         break;
 
       case SDLK_DOWN:
         current = character[DIR_DOWN];
-        go(DIR_DOWN, &character_cell_i, game_map, &crates_ok_count);
+        go(DIR_DOWN, &character_cell_i, game_map);
         break;
 
       case SDLK_LEFT:
         current = character[DIR_LEFT];
-        go(DIR_LEFT, &character_cell_i, game_map, &crates_ok_count);
+        go(DIR_LEFT, &character_cell_i, game_map);
         break;
       }
     }
     SDL_RenderClear(renderer);
 
+    uint8_t crates_ok_count = 0;
     for (uint8_t i = 0; i < MAP_WIDTH * MAP_HEIGHT; i++) {
       const uint8_t cell = game_map[i];
       if (entity_is_exactly(cell, ENTITY_NONE) ||
           entity_is_at_least(cell, ENTITY_CHARACTER))
         continue;
+
+      crates_ok_count += entity_is_exactly(cell, ENTITY_CRATE_OK);
 
       SDL_Rect rect = {.w = CELL_SIZE,
                        .h = CELL_SIZE,
