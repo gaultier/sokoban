@@ -40,7 +40,7 @@ static void entity_add_other(Entity *a, Entity b) { *a |= b; }
 #define MAP_HEIGHT 12
 #define MAP_SIZE ((MAP_WIDTH) * (MAP_WIDTH))
 
-static const uint8_t map[MAP_WIDTH][MAP_HEIGHT] = {
+static const Entity map[MAP_WIDTH][MAP_HEIGHT] = {
     {ENTITY_WALL, ENTITY_WALL, ENTITY_WALL, ENTITY_WALL, ENTITY_WALL,
      ENTITY_WALL, ENTITY_WALL, ENTITY_WALL, ENTITY_WALL, ENTITY_WALL,
      ENTITY_WALL, ENTITY_WALL},
@@ -78,7 +78,7 @@ static const uint8_t map[MAP_WIDTH][MAP_HEIGHT] = {
      ENTITY_WALL, ENTITY_WALL, ENTITY_WALL, ENTITY_WALL, ENTITY_WALL,
      ENTITY_WALL, ENTITY_WALL}};
 
-uint8_t get_next_cell_i(Direction dir, uint8_t cell) {
+uint8_t get_next_cell_i(Direction dir, Entity cell) {
   switch (dir) {
   case DIR_UP:
     return cell - 12;
@@ -91,7 +91,7 @@ uint8_t get_next_cell_i(Direction dir, uint8_t cell) {
   }
 }
 
-void load_map(uint8_t *map, uint8_t *crates_count, uint8_t *objectives_count,
+void load_map(Entity *map, uint8_t *crates_count, uint8_t *objectives_count,
               uint8_t *character_cell_i) {
   pg_assert(map != NULL);
   pg_assert(crates_count != NULL);
@@ -99,7 +99,7 @@ void load_map(uint8_t *map, uint8_t *crates_count, uint8_t *objectives_count,
   pg_assert(character_cell_i != NULL);
 
   for (uint8_t i = 0; i < MAP_SIZE; i++) {
-    const uint8_t cell = map[i];
+    const Entity cell = map[i];
     pg_assert(cell == ENTITY_NONE || cell == ENTITY_CHARACTER ||
               cell == ENTITY_WALL || cell == ENTITY_OBJECTIVE ||
               cell == ENTITY_CRATE);
@@ -111,12 +111,12 @@ void load_map(uint8_t *map, uint8_t *crates_count, uint8_t *objectives_count,
   }
 }
 
-void go(Direction dir, uint8_t *character_cell_i, uint8_t *map) {
+void go(Direction dir, uint8_t *character_cell_i, Entity *map) {
   pg_assert(character_cell_i != NULL);
   pg_assert(map != NULL);
 
   uint8_t next_cell_i = get_next_cell_i(dir, *character_cell_i);
-  uint8_t *next_cell = &map[next_cell_i];
+  Entity *const next_cell = &map[next_cell_i];
   // MW
   if (entity_is_exactly(*next_cell, ENTITY_WALL))
     return;
@@ -133,7 +133,7 @@ void go(Direction dir, uint8_t *character_cell_i, uint8_t *map) {
 
   // MC*, MCo* at this point
 
-  uint8_t *next_next_cell = &map[get_next_cell_i(dir, next_cell_i)];
+  Entity *const next_next_cell = &map[get_next_cell_i(dir, next_cell_i)];
 
   // MCW, MCC, MCCo, MCoW, MCoC, MCoCo => No pathing.
   if (entity_is_exactly(*next_next_cell, ENTITY_WALL) ||
@@ -154,7 +154,7 @@ void go(Direction dir, uint8_t *character_cell_i, uint8_t *map) {
 
 int main() {
   uint8_t crates_count = 0, objectives_count = 0, character_cell_i = 0;
-  uint8_t game_map[MAP_SIZE] = {0};
+  Entity game_map[MAP_SIZE] = {0};
   __builtin_memcpy(game_map, map, MAP_SIZE);
   load_map(game_map, &crates_count, &objectives_count, &character_cell_i);
 
@@ -275,7 +275,7 @@ int main() {
 
     uint8_t crates_ok_count = 0;
     for (uint8_t i = 0; i < MAP_WIDTH * MAP_HEIGHT; i++) {
-      const uint8_t cell = game_map[i];
+      const Entity cell = game_map[i];
       if (entity_is_exactly(cell, ENTITY_NONE) ||
           entity_is_at_least(cell, ENTITY_CHARACTER))
         continue;
