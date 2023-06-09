@@ -1,4 +1,4 @@
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -12,6 +12,7 @@
 #include "objective.h"
 #include "wall.h"
 
+#define pg_unused(x) ((void)(x))
 #define pg_assert(condition)                                                   \
   do {                                                                         \
     if (!(condition))                                                          \
@@ -19,7 +20,7 @@
   } while (0)
 
 typedef enum { DIR_UP, DIR_RIGHT, DIR_DOWN, DIR_LEFT } Direction;
-typedef enum : uint8_t {
+typedef enum __attribute__((packed)) {
   // Numbers do not matter, as long as `ENTITY_NONE` is 0.
   ENTITY_NONE = 0,
   ENTITY_WALL = 1 << 0,
@@ -83,25 +84,26 @@ static const Entity map[MAP_WIDTH][MAP_HEIGHT] = {
      ENTITY_WALL, ENTITY_WALL, ENTITY_WALL, ENTITY_WALL, ENTITY_WALL,
      ENTITY_WALL, ENTITY_WALL}};
 
-static uint8_t get_next_cell_i(Direction dir, Entity cell) {
+static uint8_t get_next_cell_i(Direction dir, uint8_t cell_i) {
   switch (dir) {
   case DIR_UP:
-    return cell - MAP_WIDTH;
+    return cell_i - MAP_WIDTH;
   case DIR_RIGHT:
-    return cell + 1;
+    return cell_i + 1;
   case DIR_DOWN:
-    return cell + MAP_WIDTH;
+    return cell_i + MAP_WIDTH;
   case DIR_LEFT:
-    return cell - 1;
+    return cell_i - 1;
   }
+  __builtin_unreachable();
 }
 
 static void load_map(Entity *map, uint8_t *crates_count,
                      uint8_t *objectives_count, uint8_t *character_cell_i) {
-  pg_assert(map != NULL);
-  pg_assert(crates_count != NULL);
-  pg_assert(objectives_count != NULL);
-  pg_assert(character_cell_i != NULL);
+  pg_assert(map != 0);
+  pg_assert(crates_count != 0);
+  pg_assert(objectives_count != 0);
+  pg_assert(character_cell_i != 0);
 
   for (uint8_t i = 0; i < MAP_SIZE; i++) {
     const Entity cell = map[i];
@@ -120,17 +122,17 @@ static SDL_Texture *load_texture(SDL_Renderer *renderer, const uint8_t *data) {
   SDL_Surface *surface =
       SDL_CreateRGBSurfaceFrom((void *)data, CELL_SIZE, CELL_SIZE, 24,
                                CELL_SIZE * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
-  pg_assert(surface != NULL);
+  pg_assert(surface != 0);
   SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-  pg_assert(texture != NULL);
+  pg_assert(texture != 0);
   SDL_FreeSurface(surface);
 
   return texture;
 }
 
 static void go(Direction dir, uint8_t *character_cell_i, Entity *map) {
-  pg_assert(character_cell_i != NULL);
-  pg_assert(map != NULL);
+  pg_assert(character_cell_i != 0);
+  pg_assert(map != 0);
 
   uint8_t next_cell_i = get_next_cell_i(dir, *character_cell_i);
   Entity *const next_cell = &map[next_cell_i];
@@ -169,7 +171,10 @@ static void go(Direction dir, uint8_t *character_cell_i, Entity *map) {
   }
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+  pg_unused(argc);
+  pg_unused(argv);
+
   uint8_t crates_count = 0, objectives_count = 0, character_cell_i = 0;
   Entity game_map[MAP_SIZE] = {0};
   __builtin_memcpy(game_map, map, MAP_SIZE);
@@ -183,7 +188,7 @@ int main() {
 
   SDL_Renderer *renderer =
       SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-  pg_assert(renderer != NULL);
+  pg_assert(renderer != 0);
   SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
   SDL_Texture *character[4] = {
       [DIR_UP] = load_texture(renderer, character_up_rgb),
@@ -260,15 +265,15 @@ int main() {
       // occupying the same cell, we want to draw: character > crate_ok > crate
       // > objective.
       if (bitset_contains(cell, ENTITY_CHARACTER)) {
-        SDL_RenderCopy(renderer, current, NULL, &rect);
+        SDL_RenderCopy(renderer, current, 0, &rect);
       } else if (bitset_is_exactly(cell, ENTITY_WALL)) {
-        SDL_RenderCopy(renderer, textures[ENTITY_WALL], NULL, &rect);
+        SDL_RenderCopy(renderer, textures[ENTITY_WALL], 0, &rect);
       } else if (bitset_is_exactly(cell, ENTITY_CRATE_OK)) {
-        SDL_RenderCopy(renderer, textures[ENTITY_CRATE_OK], NULL, &rect);
+        SDL_RenderCopy(renderer, textures[ENTITY_CRATE_OK], 0, &rect);
       } else if (bitset_is_exactly(cell, ENTITY_CRATE)) {
-        SDL_RenderCopy(renderer, textures[ENTITY_CRATE], NULL, &rect);
+        SDL_RenderCopy(renderer, textures[ENTITY_CRATE], 0, &rect);
       } else if (bitset_is_exactly(cell, ENTITY_OBJECTIVE)) {
-        SDL_RenderCopy(renderer, textures[ENTITY_OBJECTIVE], NULL, &rect);
+        SDL_RenderCopy(renderer, textures[ENTITY_OBJECTIVE], 0, &rect);
       }
     }
     SDL_RenderPresent(renderer);
@@ -280,4 +285,6 @@ int main() {
       exit(0);
     }
   }
+
+  return 0;
 }
