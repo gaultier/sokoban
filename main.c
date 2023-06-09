@@ -13,11 +13,6 @@
 #include "wall.h"
 
 #define pg_unused(x) ((void)(x))
-#define pg_assert(condition)                                                   \
-  do {                                                                         \
-    if (!(condition))                                                          \
-      __builtin_trap();                                                        \
-  } while (0)
 
 typedef enum { DIR_UP, DIR_RIGHT, DIR_DOWN, DIR_LEFT } Direction;
 typedef enum __attribute__((packed)) {
@@ -100,14 +95,14 @@ static uint8_t get_next_cell_i(Direction dir, uint8_t cell_i) {
 
 static void load_map(Entity *map, uint8_t *crates_count,
                      uint8_t *objectives_count, uint8_t *character_cell_i) {
-  pg_assert(map != 0);
-  pg_assert(crates_count != 0);
-  pg_assert(objectives_count != 0);
-  pg_assert(character_cell_i != 0);
+  SDL_assert(map != 0);
+  SDL_assert(crates_count != 0);
+  SDL_assert(objectives_count != 0);
+  SDL_assert(character_cell_i != 0);
 
   for (uint8_t i = 0; i < MAP_SIZE; i++) {
     const Entity cell = map[i];
-    pg_assert(cell == ENTITY_NONE || cell == ENTITY_CHARACTER ||
+    SDL_assert (cell == ENTITY_NONE || cell == ENTITY_CHARACTER ||
               cell == ENTITY_WALL || cell == ENTITY_OBJECTIVE ||
               cell == ENTITY_CRATE);
 
@@ -122,17 +117,17 @@ static SDL_Texture *load_texture(SDL_Renderer *renderer, const uint8_t *data) {
   SDL_Surface *surface =
       SDL_CreateRGBSurfaceFrom((void *)data, CELL_SIZE, CELL_SIZE, 24,
                                CELL_SIZE * 3, 0x0000ff, 0x00ff00, 0xff0000, 0);
-  pg_assert(surface != 0);
+  SDL_assert(surface != 0);
   SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-  pg_assert(texture != 0);
+  SDL_assert(texture != 0);
   SDL_FreeSurface(surface);
 
   return texture;
 }
 
 static void go(Direction dir, uint8_t *character_cell_i, Entity *map) {
-  pg_assert(character_cell_i != 0);
-  pg_assert(map != 0);
+  SDL_assert(character_cell_i != 0);
+  SDL_assert(map != 0);
 
   uint8_t next_cell_i = get_next_cell_i(dir, *character_cell_i);
   Entity *const next_cell = &map[next_cell_i];
@@ -186,9 +181,8 @@ int main(int argc, char *argv[]) {
   if (!window)
     exit(1);
 
-  SDL_Renderer *renderer =
-      SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-  pg_assert(renderer != 0);
+  SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
+  SDL_assert(renderer != 0);
   SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
   SDL_Texture *character[4] = {
       [DIR_UP] = load_texture(renderer, character_up_rgb),
