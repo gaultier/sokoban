@@ -102,9 +102,9 @@ static void load_map(Entity *map, uint8_t *crates_count,
 
   for (uint8_t i = 0; i < MAP_SIZE; i++) {
     const Entity cell = map[i];
-    SDL_assert (cell == ENTITY_NONE || cell == ENTITY_CHARACTER ||
-              cell == ENTITY_WALL || cell == ENTITY_OBJECTIVE ||
-              cell == ENTITY_CRATE);
+    SDL_assert(cell == ENTITY_NONE || cell == ENTITY_CHARACTER ||
+               cell == ENTITY_WALL || cell == ENTITY_OBJECTIVE ||
+               cell == ENTITY_CRATE);
 
     *crates_count += cell == ENTITY_CRATE;
     *objectives_count += cell == ENTITY_OBJECTIVE;
@@ -169,6 +169,7 @@ static void go(Direction dir, uint8_t *character_cell_i, Entity *map) {
 int main(int argc, char *argv[]) {
   pg_unused(argc);
   pg_unused(argv);
+
 
   uint8_t crates_count = 0, objectives_count = 0, character_cell_i = 0;
   Entity game_map[MAP_SIZE] = {0};
